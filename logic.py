@@ -16,23 +16,18 @@ def calcular_nomina(salario_base, he_diurnas, recargos_noc, dias_incapacidad, fa
     pago_recargos_noc = recargos_noc * valor_hora * 0.35
     total_extras = pago_he_diurnas + pago_recargos_noc
     
-    # 3. Módulo de Incapacidades (Blindaje 2026)
+    # 3. Módulo de Incapacidades (Blindaje 2026 - Mínimo Vital)
     pago_incapacidad = 0
     if dias_incapacidad > 0:
-        if salario_base <= SMLMV_2026:
-            # Gana el mínimo: Protección constitucional al mínimo vital (Paga 100% todos los días)
-            pago_incapacidad = dias_incapacidad * valor_dia
-        else:
-            # Gana más del mínimo: Empleador asume 2 días al 100%, resto EPS al 66.67%
-            dias_al_100 = min(dias_incapacidad, 2)
-            dias_al_66 = max(0, dias_incapacidad - 2)
+        # La ley ordena el 66.67% (Art. 227 CST), pero NUNCA por debajo del mínimo diario.
+        # Esto aplica igual para los días a cargo del empleador (1-2) y de la EPS (3+).
+        valor_dia_incapacidad = valor_dia * 0.6667
+        valor_dia_minimo_legal = SMLMV_2026 / 30
+        
+        if valor_dia_incapacidad < valor_dia_minimo_legal:
+            valor_dia_incapacidad = valor_dia_minimo_legal
             
-            valor_dia_66 = valor_dia * 0.6667
-            # El día de incapacidad nunca puede pagarse por debajo de un día mínimo legal
-            if valor_dia_66 < (SMLMV_2026 / 30):
-                valor_dia_66 = SMLMV_2026 / 30
-                
-            pago_incapacidad = (dias_al_100 * valor_dia) + (dias_al_66 * valor_dia_66)
+        pago_incapacidad = dias_incapacidad * valor_dia_incapacidad
             
     # 4. Descuentos por faltas (Pérdida de Dominical - Art. 173 CST)
     descuento_faltas = 0
