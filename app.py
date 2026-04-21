@@ -21,22 +21,16 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-c1, c2, c3, c4 = st.columns(4)
-c1.markdown("<div style='background-color: #E3F2FD; padding: 8px; border-radius: 5px; text-align: center; border: 1px solid #0D47A1; font-weight: bold; color: #0D47A1;'>✅ SMLMV: $1.512.000</div>", unsafe_allow_html=True)
-c2.markdown("<div style='background-color: #E3F2FD; padding: 8px; border-radius: 5px; text-align: center; border: 1px solid #0D47A1; font-weight: bold; color: #0D47A1;'>✅ Aux. Transp: $182.000</div>", unsafe_allow_html=True)
-c3.markdown("<div style='background-color: #FFF8E1; padding: 8px; border-radius: 5px; text-align: center; border: 1px solid #FF8F00; font-weight: bold; color: #FF8F00;'>⚖️ Jornada: Ley 2101</div>", unsafe_allow_html=True)
-c4.markdown("<div style='background-color: #FFF8E1; padding: 8px; border-radius: 5px; text-align: center; border: 1px solid #FF8F00; font-weight: bold; color: #FF8F00;'>🌙 Dom/Fest/Nocturnos</div>", unsafe_allow_html=True)
-
-st.write("<br>", unsafe_allow_html=True)
-
-with st.expander("👤 1. DATOS DEL EMPLEADOR Y EMPLEADO", expanded=True):
+with st.expander("👤 1. DATOS DEL EMPLEADOR, EMPLEADO Y PERÍODO", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
         restaurante = st.text_input("Nombre de la Empresa / Empleador")
         empleado = st.text_input("Nombre del Trabajador")
+        fecha_inicio = st.date_input("Fecha Inicio Período")
     with col2:
         nit = st.text_input("NIT / Cédula Empleador")
         cedula = st.text_input("Cédula Trabajador")
+        fecha_fin = st.date_input("Fecha Fin Período")
 
 with st.expander("💰 2. SALARIO Y TIEMPO ADICIONAL (Horas Extras y Dominicales)"):
     salario_base = st.number_input("Salario Mensual Base", value=SMLMV_2026)
@@ -62,38 +56,14 @@ with st.expander("📉 4. OTROS DESCUENTOS"):
 st.write("<br>", unsafe_allow_html=True)
 
 if st.button("🚀 CALCULAR NÓMINA Y GENERAR SOPORTE"):
-    # Enviamos los nuevos datos a logic.py
     resultados = calcular_nomina(salario_base, he_diurnas, recargos_noc, recargos_dom, he_dom, dias_incapacidad, faltas_injustificadas, prestamos)
-    
     st.success("✅ Liquidación calculada con precisión legal.")
-    st.markdown("### 📊 Desglose Detallado de la Liquidación")
     
-    col_izq, col_der = st.columns(2)
-    with col_izq:
-        st.markdown("<div style='background-color: #E8F5E9; padding: 15px; border-radius: 8px; border-left: 5px solid #2E7D32;'>", unsafe_allow_html=True)
-        st.markdown("<h4 style='color: #2E7D32; margin-top: 0;'>🟢 DEVENGOS (Ingresos)</h4>", unsafe_allow_html=True)
-        st.write(f"**Salario Base ({resultados['dias_trabajados']} días):** ${resultados['salario_base']/30*resultados['dias_trabajados']:,.0f}")
-        st.write(f"**Horas Extras, Recargos y Dominicales:** ${resultados['total_extras']:,.0f}")
-        st.write(f"**Pago por Incapacidad:** ${resultados['pago_incapacidad']:,.0f}")
-        st.write(f"**Auxilio de Transporte:** ${resultados['aux_transporte']:,.0f}")
-        st.markdown(f"#### Total Devengado: ${resultados['total_devengado']:,.0f}")
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    with col_der:
-        st.markdown("<div style='background-color: #FFEBEE; padding: 15px; border-radius: 8px; border-left: 5px solid #C62828;'>", unsafe_allow_html=True)
-        st.markdown("<h4 style='color: #C62828; margin-top: 0;'>🔴 DEDUCCIONES (Descuentos)</h4>", unsafe_allow_html=True)
-        st.write(f"**Salud (4%):** ${resultados['salud']:,.0f}")
-        st.write(f"**Pensión (4%):** ${resultados['pension']:,.0f}")
-        st.write(f"**Castigo por Faltas (Art. 173):** ${resultados['descuento_faltas']:,.0f}")
-        st.write(f"**Préstamos/Adelantos:** ${resultados['prestamos']:,.0f}")
-        st.markdown(f"#### Total Deducciones: ${resultados['total_deducciones']:,.0f}")
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    st.markdown("---")
     st.markdown(f"<h2 style='text-align: center; color: #0D47A1; background-color: #E3F2FD; padding: 15px; border-radius: 10px;'>💵 NETO A PAGAR: ${resultados['neto']:,.0f}</h2>", unsafe_allow_html=True)
     
     try:
-        pdf_file = generar_pdf(restaurante, empleado, resultados)
+        # Ahora enviamos las fechas y documentos al generador de PDF
+        pdf_file = generar_pdf(restaurante, nit, empleado, cedula, str(fecha_inicio), str(fecha_fin), resultados)
         st.download_button("📩 Descargar Comprobante Legal (PDF)", data=pdf_file, file_name=f"Nomina_{empleado}.pdf")
     except Exception as e:
         st.error(f"Error al crear PDF: {e}")
