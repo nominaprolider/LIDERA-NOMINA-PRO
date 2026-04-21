@@ -29,8 +29,7 @@ def generar_pdf(empresa, empleado, res):
     pdf.set_font("helvetica", "", 11)
     
     pdf.cell(140, 8, f"Salario Base (Dias trabajados: {res['dias_trabajados']})", border=1)
-    pdf.cell(50, 8, moneda((res['salario_base']/30) * res['dias_trabajados']), border=1, align="R", new_x="LMARGIN", new_y="NEXT")
-    
+    pdf.cell(140, 8, "Horas Extras y Recargos (Inc. Dom/Fest)", border=1)    
     pdf.cell(140, 8, "Horas Extras y Recargos", border=1)
     pdf.cell(50, 8, moneda(res['total_extras']), border=1, align="R", new_x="LMARGIN", new_y="NEXT")
     
