@@ -24,6 +24,7 @@ st.markdown("""
     <span class="badge">✓ SMLMV 2026: $1.750.905</span>
     <span class="badge">✓ Aux. Transporte: $249.095</span>
     <span class="badge">⚖️ Jornada 42h (Divisor 210)</span>
+    <span class="badge">🔄 Tarifas Actualizadas Ley 2466/2025</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -57,35 +58,33 @@ with st.expander("➕ Novedades: Trabajo Extra y Recargos (Desplegar si aplica)"
         he_nocturnas = st.number_input("Horas Extras Nocturnas (75%)", min_value=0.0, value=0.0, step=1.0)
     with col_he2:
         recargo_nocturno = st.number_input("Recargos Nocturnos (35%)", min_value=0.0, value=0.0, step=1.0)
-        dom_fest_ordinario = st.number_input("Dominical/Festivo Ordinario (75%)", min_value=0.0, value=0.0, step=1.0)
+        # Ajuste legal 2026: 80%
+        dom_fest_ordinario = st.number_input("Dominical/Festivo Ordinario (80%)", min_value=0.0, value=0.0, step=1.0)
     with col_he3:
-        he_dom_diurna = st.number_input("H. Extra Dom/Fest Diurna (100%)", min_value=0.0, value=0.0, step=1.0)
-        he_dom_nocturna = st.number_input("H. Extra Dom/Fest Nocturna (150%)", min_value=0.0, value=0.0, step=1.0)
+        # Ajustes legales 2026: 105% y 155%
+        he_dom_diurna = st.number_input("H. Extra Dom/Fest Diurna (105%)", min_value=0.0, value=0.0, step=1.0)
+        he_dom_nocturna = st.number_input("H. Extra Dom/Fest Nocturna (155%)", min_value=0.0, value=0.0, step=1.0)
 
-# 4. Descuentos y Ausentismos (CON TOOLTIPS LEGALES)
+# 4. Descuentos y Ausentismos
 with st.expander("➖ Deducciones y Ausentismos (Desplegar si aplica)"):
     col_d1, col_d2 = st.columns(2)
     with col_d1:
-        # Tooltip para faltas
         faltas_injustificadas = st.number_input(
             "Días de falta injustificada", 
             min_value=0, max_value=30, value=0,
             help="Art. 173 CST: La ausencia injustificada genera el descuento del día no laborado, la pérdida del descanso dominical remunerado y el no pago del auxilio de transporte por esos días."
         )
-        # Tooltip para incapacidad
         dias_incapacidad = st.number_input(
             "Días de incapacidad médica", 
             min_value=0, max_value=30, value=0,
             help="Durante la incapacidad (EPS o ARL) no hay desplazamiento al lugar de trabajo, por lo tanto, la ley exime al empleador de pagar el Auxilio de Transporte por estos días."
         )
     with col_d2:
-        # Tooltip para préstamos
         prestamos = st.number_input(
             "Descuento por préstamos (COP)", 
             min_value=0, value=0, step=10000,
             help="Art. 59 CST: Todo descuento por préstamos o anticipos debe estar expresa y previamente autorizado por escrito por el trabajador. Nunca se puede afectar el salario mínimo vital inembargable."
         )
-        # Tooltip para otras deducciones
         otras_deducciones = st.number_input(
             "Otras deducciones (Embargos/Sindicato)", 
             min_value=0, value=0, step=10000,
@@ -101,13 +100,14 @@ dias_transporte = dias_periodo - faltas_injustificadas - dias_incapacidad
 salario_proporcional = (SMLMV_2026 / 30) * dias_salario
 auxilio_proporcional = (AUXILIO_2026 / 30) * dias_transporte if tiene_auxilio else 0
 
+# Fórmulas de recargo actualizadas a la Ley de 2026
 total_extras = (
     (he_diurnas * VALOR_HORA_ORDINARIA * 1.25) +
     (he_nocturnas * VALOR_HORA_ORDINARIA * 1.75) +
     (recargo_nocturno * VALOR_HORA_ORDINARIA * 0.35) +
-    (dom_fest_ordinario * VALOR_HORA_ORDINARIA * 1.75) +
-    (he_dom_diurna * VALOR_HORA_ORDINARIA * 2.00) +
-    (he_dom_nocturna * VALOR_HORA_ORDINARIA * 2.50)
+    (dom_fest_ordinario * VALOR_HORA_ORDINARIA * 1.80) +
+    (he_dom_diurna * VALOR_HORA_ORDINARIA * 2.05) +
+    (he_dom_nocturna * VALOR_HORA_ORDINARIA * 2.55)
 )
 
 total_devengado = salario_proporcional + total_extras + auxilio_proporcional
@@ -123,7 +123,7 @@ neto_pagar = total_devengado - total_deducciones
 st.markdown("---")
 st.markdown("### 📊 Liquidación Rápida")
 df_resultados = pd.DataFrame({
-    "Concepto": ["Salario Base", "Horas Extras", "Aux. Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "TOTAL NETO"],
+    "Concepto": ["Salario Base", "Horas Extras y Recargos", "Aux. Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "TOTAL NETO"],
     "Valor (COP)": [f"+ ${salario_proporcional:,.0f}", f"+ ${total_extras:,.0f}", f"+ ${auxilio_proporcional:,.0f}", f"- ${salud:,.0f}", f"- ${pension:,.0f}", f"- ${(prestamos+otras_deducciones):,.0f}", f"${neto_pagar:,.0f}"]
 })
 st.table(df_resultados)
