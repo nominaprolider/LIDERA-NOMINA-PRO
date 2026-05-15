@@ -23,7 +23,7 @@ st.markdown("""
 <div class="badge-container">
     <span class="badge">✓ SMLMV 2026: $1.750.905</span>
     <span class="badge">✓ Aux. Transporte: $249.095</span>
-    <span class="badge">⚖️ Jornada 42h (Divisor 210)</span>
+    <span class="badge">⚖️ Jornada 44h (Divisor 220)</span>
     <span class="badge">🔄 Tarifas Actualizadas Ley 2466/2025</span>
 </div>
 """, unsafe_allow_html=True)
@@ -31,7 +31,7 @@ st.markdown("""
 # 2. Constantes Legales 2026
 SMLMV_2026 = 1750905
 AUXILIO_2026 = 249095
-DIVISOR_HORAS = 210
+DIVISOR_HORAS = 220
 VALOR_HORA_ORDINARIA = SMLMV_2026 / DIVISOR_HORAS
 
 st.markdown("### 📋 1. Datos del Período")
