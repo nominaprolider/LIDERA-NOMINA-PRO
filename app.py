@@ -16,7 +16,7 @@ st.markdown("""
 
 <div class="main-header">
     <h1>🌿 Asistente de Nómina Blindada</h1>
-    <p>Gestión Integral de Novedades y Ausentismos · Colombia 2026</p>
+    <p>Gestión Integral Multisalario y Ausentismos · Colombia 2026</p>
 </div>
 <div class="badge-container">
     <span class="badge">⚖️ Jornada 44h (Divisor 220)</span>
@@ -25,68 +25,92 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# 2. Constantes 2026
+# 2. Constantes Legales 2026
 SMLMV_2026 = 1750905
 AUXILIO_2026 = 249095
-DIVISOR_HORAS = 220 
 LIMITE_AUXILIO = SMLMV_2026 * 2
+DIVISOR_HORAS = 220 
 
 # 3. Datos Básicos
-st.markdown("### 📋 1. Información General")
+st.markdown("### 📋 1. Datos Generales")
 col1, col2 = st.columns(2)
 with col1:
-    empresa = st.text_input("Empresa/Empleador")
-    empleado = st.text_input("Trabajador")
+    empresa = st.text_input("Nombre de la Empresa / Empleador")
+    nit = st.text_input("NIT o Cédula del Empleador")
 with col2:
-    salario_base = st.number_input("Salario Mensual Pactado (COP)", min_value=1750905, value=1750905, step=50000)
-    modalidad = st.radio("Modalidad:", ["Mensual/Quincenal", "Por Días"], horizontal=True)
-
-# 4. Gestión de Días y Auxilio
-dias_periodo = st.number_input("Días del período a liquidar", min_value=1, max_value=30, value=15)
-tiene_auxilio = st.checkbox("¿Aplica Auxilio de Transporte?", value=(salario_base <= LIMITE_AUXILIO))
+    empleado = st.text_input("Nombre completo del trabajador")
+    cedula = st.text_input("Cédula del trabajador")
 
 st.divider()
 
-# 5. NOVEDADES Y AUSENTISMOS (EL AJUSTE SOLICITADO)
-st.markdown("### ⚙️ 2. Novedades del Período")
-with st.expander("⚠️ Registrar Ausencias e Incapacidades (Click para desplegar)"):
+# 4. Configuración Salarial
+st.markdown("### ⚙️ 2. Modalidad y Base Salarial")
+modalidad = st.radio("Tipo de vinculación:", ["Ordinaria (Quincena/Mes)", "Por Días (Doméstica/Meseros)"], horizontal=True)
+
+salario_base = st.number_input("Salario Base Mensual Pactado (COP)", min_value=1750905, value=1750905, step=50000)
+VALOR_HORA_ORDINARIA = salario_base / DIVISOR_HORAS
+aplica_auxilio_ley = True if salario_base <= LIMITE_AUXILIO else False
+
+if modalidad == "Ordinaria (Quincena/Mes)":
+    col3, col4 = st.columns(2)
+    with col3:
+        dias_periodo = st.number_input("Días del período a liquidar", min_value=1, max_value=30, value=15)
+    with col4:
+        tiene_auxilio = st.checkbox("Incluir Auxilio de Transporte", value=aplica_auxilio_ley)
+else:
+    col3, col4 = st.columns(2)
+    with col3:
+        dias_periodo = st.number_input("Días laborados en el mes", min_value=1, max_value=21, value=4)
+    with col4:
+        tiene_auxilio = st.checkbox("Incluir Auxilio Proporcional", value=True)
+
+# 5. Novedades, Horas Extras y Ausentismos (TODO INTEGRADO)
+st.markdown("### 📊 3. Novedades del Período")
+
+with st.expander("➕ Horas Extras y Recargos"):
+    col_h1, col_h2 = st.columns(2)
+    with col_h1:
+        he_d = st.number_input("H. Extras Diurnas (25%)", value=0.0)
+        he_n = st.number_input("H. Extras Nocturnas (75%)", value=0.0)
+        rec_n = st.number_input("Recargos Nocturnos (35%)", value=0.0)
+    with col_h2:
+        dom = st.number_input("Dominical/Festivo Ordinario (80%)", value=0.0)
+        he_dom_d = st.number_input("H.E. Dom Diurna (105%)", value=0.0)
+        he_dom_n = st.number_input("H.E. Dom Nocturna (155%)", value=0.0)
+
+with st.expander("⚠️ Registrar Ausencias e Incapacidades"):
     col_a1, col_a2 = st.columns(2)
     with col_a1:
-        faltas_injustificadas = st.number_input(
-            "Faltas INJUSTIFICADAS (Días)", min_value=0, 
-            help="CST Art. 173: Descuenta el salario del día, el auxilio de transporte y EL DOMINICAL."
-        )
+        faltas_injustificadas = st.number_input("Faltas INJUSTIFICADAS (Días)", min_value=0, help="CST Art. 173: Descuenta el día, el dominical y el auxilio de transporte.")
     with col_a2:
-        inasistencias_justificadas = st.number_input(
-            "Inasistencias JUSTIFICADAS / Incapacidad (Días)", min_value=0,
-            help="Jurisprudencia CSJ: No descuenta el dominical, pero el Auxilio de Transporte NO se paga por estos días al no haber desplazamiento."
-        )
+        inasistencias_justificadas = st.number_input("Inasistencias JUSTIFICADAS / Incapacidad", min_value=0, help="CSJ: Mantiene el dominical, pero descuenta el Auxilio de Transporte al no haber desplazamiento.")
 
-# 6. LÓGICA MATEMÁTICA BLINDADA
+with st.expander("➖ Otras Deducciones"):
+    prestamos = st.number_input("Préstamos/Embargos (COP)", value=0, step=10000, help="Debe existir autorización escrita.")
+
+# 6. Lógica Matemática Blindada
 valor_dia = salario_base / 30
-valor_hora = salario_base / DIVISOR_HORAS
 
-# Días para Salario: Se descuentan las injustificadas y se resta el dominical por cada falta
-# Las justificadas no descuentan salario en este liquidador (se asume permiso pago o trámite EPS)
-dias_a_pagar_salario = dias_periodo - (faltas_injustificadas * 2) 
+# Días a pagar (Descuentos inteligentes)
+dias_salario = max(0, dias_periodo - (faltas_injustificadas * 2)) # Falta + Dominical
+dias_auxilio = max(0, dias_periodo - faltas_injustificadas - inasistencias_justificadas) # Ambas quitan transporte
 
-# Días para Auxilio: Se descuentan AMBAS (Justificadas e Injustificadas)
-dias_a_pagar_auxilio = max(0, dias_periodo - faltas_injustificadas - inasistencias_justificadas)
+salario_final = (valor_dia * dias_salario)
+auxilio_final = (AUXILIO_2026 / 30 * dias_auxilio) if tiene_auxilio else 0
 
-salario_final = (valor_dia * dias_a_pagar_salario)
-auxilio_final = (AUXILIO_2026 / 30 * dias_a_pagar_auxilio) if tiene_auxilio else 0
+total_extras = (he_d * VALOR_HORA_ORDINARIA * 1.25) + (he_n * VALOR_HORA_ORDINARIA * 1.75) + (rec_n * VALOR_HORA_ORDINARIA * 0.35) + (dom * VALOR_HORA_ORDINARIA * 1.80) + (he_dom_d * VALOR_HORA_ORDINARIA * 2.05) + (he_dom_n * VALOR_HORA_ORDINARIA * 2.55)
 
-# (Cálculo de seguridad social sobre el devengado de salario)
-salud_pension = (salario_final * 0.08)
-neto = salario_final + auxilio_final - salud_pension
+devengado = salario_final + total_extras + auxilio_final
+base_ss = salario_final + total_extras
 
-# 7. Visualización
+salud = base_ss * 0.04
+pension = base_ss * 0.04
+neto = devengado - salud - pension - prestamos
+
+# 7. Visualización y Comprobante
 st.markdown("---")
-st.markdown(f"### 📊 Resumen Liquidación: **${neto:,.0f}**")
+st.markdown(f"### 💰 TOTAL NETO A PAGAR: **${neto:,.0f}**")
 
-# Tabla de Auditoría
 resumen = pd.DataFrame({
-    "Concepto": ["Días Salario Pagados", "Días Auxilio Pagados", "Salario Proporcional", "Auxilio Transporte", "Seguridad Social (8%)", "NETO FINAL"],
-    "Detalle": [f"{dias_a_pagar_salario} días", f"{dias_a_pagar_auxilio} días", f"$ {salario_final:,.0f}", f"$ {auxilio_final:,.0f}", f"- $ {salud_pension:,.0f}", f"$ {neto:,.0f}"]
-})
-st.table(resumen)
+    "Concepto": ["Salario Proporcional", "Total Horas Extras", "Auxilio de Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "NETO FINAL"],
+    "Valor": [f"+ $ {salario_final
