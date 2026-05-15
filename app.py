@@ -113,4 +113,20 @@ st.markdown(f"### 💰 TOTAL NETO A PAGAR: **${neto:,.0f}**")
 
 resumen = pd.DataFrame({
     "Concepto": ["Salario Proporcional", "Total Horas Extras", "Auxilio de Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "NETO FINAL"],
-    "Valor": [f"+ $ {salario_final
+    "Valor": [f"+ $ {salario_final:,.0f}", f"+ $ {total_extras:,.0f}", f"+ $ {auxilio_final:,.0f}", f"- $ {salud:,.0f}", f"- $ {pension:,.0f}", f"- $ {prestamos:,.0f}", f"$ {neto:,.0f}"]
+})
+st.table(resumen)
+
+if st.button("📄 Generar Comprobante para Firma", type="primary"):
+    st.markdown(f"""
+    <div class="recibo-box">
+        <h3 style="text-align: center;">RECIBO DE PAGO Y PAZ Y SALVO</h3>
+        <p><strong>Empresa:</strong> {empresa} | <strong>Trabajador:</strong> {empleado} ({cedula})</p>
+        <p><strong>Neto Pagado:</strong> ${neto:,.0f}</p>
+        <p style="font-size: 0.8rem;">El trabajador declara haber recibido a conformidad el pago exacto de su salario, auxilio de transporte, recargos y descuentos de ley, encontrándose a paz y salvo por este periodo.</p>
+        <div style="display: flex; justify-content: space-around; margin-top: 40px;">
+            <div style="border-top: 1px solid black; width: 40%; text-align: center;">Empleador</div>
+            <div style="border-top: 1px solid black; width: 40%; text-align: center;">Trabajador</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
