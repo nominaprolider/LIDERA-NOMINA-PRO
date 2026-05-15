@@ -9,8 +9,8 @@ from typing import List, Dict, Any
 # ════════════════════════════════════════════════════════════════════
 # CONSTANTES LEGALES 2026
 # ════════════════════════════════════════════════════════════════════
-SMLMV_2026      = 1_512_000       # Decreto 2910 de 2024
-AUX_TRANSPORTE  = 182_000         # Decreto 2911 de 2024
+SMLMV_2026      = 1_750_905       # Decreto 2910 de 2024
+AUX_TRANSPORTE  = 249_095         # Decreto 2911 de 2024
 HORAS_SEMANA    = 42              # Ley 2101 de 2021
 DIVISOR_HORA    = 210             # Para salario mensual → valor hora
 VALOR_HORA_MIN  = round(SMLMV_2026 / DIVISOR_HORA)  # ~7.200
