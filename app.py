@@ -1,132 +1,134 @@
 import streamlit as st
-import pandas as pd
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 
-# 1. Configuración y Diseño
-st.set_page_config(page_title="Nómina Blindada Lidera", layout="wide", page_icon="🌿")
+# --- CONFIGURACIÓN DE PÁGINA Y ESTILO ---
+st.set_page_config(page_title="Lidera Nómina Pro - Comprobante", layout="centered")
 
 st.markdown("""
-<style>
-.main-header { background-color: #2E8B57; padding: 25px; border-radius: 12px; color: white; text-align: center; margin-bottom: 20px; }
-.main-header h1 { color: white; font-family: 'Segoe UI', sans-serif; margin-bottom: 5px; }
-.badge-container { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; justify-content: center; }
-.badge { border: 1px solid #4CAF50; background-color: #F1F8E9; border-radius: 20px; padding: 8px 18px; color: #2E7D32; font-weight: 600; font-size: 0.9rem; }
-.recibo-box { border: 2px solid #2E8B57; padding: 30px; border-radius: 10px; background-color: white; margin-top: 20px; color: black; }
-</style>
-
-<div class="main-header">
-    <h1>🌿 Asistente de Nómina Blindada</h1>
-    <p>Gestión Integral Multisalario y Ausentismos · Colombia 2026</p>
-</div>
-<div class="badge-container">
-    <span class="badge">⚖️ Jornada 44h (Divisor 220)</span>
-    <span class="badge">🔄 Ley 2466/2025 (Recargo 80%)</span>
-    <span class="badge">🛡️ Blindaje Jurisprudencial CSJ</span>
-</div>
-""", unsafe_allow_html=True)
-
-# 2. Constantes Legales 2026
-SMLMV_2026 = 1750905
-AUXILIO_2026 = 249095
-LIMITE_AUXILIO = SMLMV_2026 * 2
-DIVISOR_HORAS = 220 
-
-# 3. Datos Básicos
-st.markdown("### 📋 1. Datos Generales")
-col1, col2 = st.columns(2)
-with col1:
-    empresa = st.text_input("Nombre de la Empresa / Empleador")
-    nit = st.text_input("NIT o Cédula del Empleador")
-with col2:
-    empleado = st.text_input("Nombre completo del trabajador")
-    cedula = st.text_input("Cédula del trabajador")
-
-st.divider()
-
-# 4. Configuración Salarial
-st.markdown("### ⚙️ 2. Modalidad y Base Salarial")
-modalidad = st.radio("Tipo de vinculación:", ["Ordinaria (Quincena/Mes)", "Por Días (Doméstica/Meseros)"], horizontal=True)
-
-salario_base = st.number_input("Salario Base Mensual Pactado (COP)", min_value=1750905, value=1750905, step=50000)
-VALOR_HORA_ORDINARIA = salario_base / DIVISOR_HORAS
-aplica_auxilio_ley = True if salario_base <= LIMITE_AUXILIO else False
-
-if modalidad == "Ordinaria (Quincena/Mes)":
-    col3, col4 = st.columns(2)
-    with col3:
-        dias_periodo = st.number_input("Días del período a liquidar", min_value=1, max_value=30, value=15)
-    with col4:
-        tiene_auxilio = st.checkbox("Incluir Auxilio de Transporte", value=aplica_auxilio_ley)
-else:
-    col3, col4 = st.columns(2)
-    with col3:
-        dias_periodo = st.number_input("Días laborados en el mes", min_value=1, max_value=21, value=4)
-    with col4:
-        tiene_auxilio = st.checkbox("Incluir Auxilio Proporcional", value=True)
-
-# 5. Novedades, Horas Extras y Ausentismos (TODO INTEGRADO)
-st.markdown("### 📊 3. Novedades del Período")
-
-with st.expander("➕ Horas Extras y Recargos"):
-    col_h1, col_h2 = st.columns(2)
-    with col_h1:
-        he_d = st.number_input("H. Extras Diurnas (25%)", value=0.0)
-        he_n = st.number_input("H. Extras Nocturnas (75%)", value=0.0)
-        rec_n = st.number_input("Recargos Nocturnos (35%)", value=0.0)
-    with col_h2:
-        dom = st.number_input("Dominical/Festivo Ordinario (80%)", value=0.0)
-        he_dom_d = st.number_input("H.E. Dom Diurna (105%)", value=0.0)
-        he_dom_n = st.number_input("H.E. Dom Nocturna (155%)", value=0.0)
-
-with st.expander("⚠️ Registrar Ausencias e Incapacidades"):
-    col_a1, col_a2 = st.columns(2)
-    with col_a1:
-        faltas_injustificadas = st.number_input("Faltas INJUSTIFICADAS (Días)", min_value=0, help="CST Art. 173: Descuenta el día, el dominical y el auxilio de transporte.")
-    with col_a2:
-        inasistencias_justificadas = st.number_input("Inasistencias JUSTIFICADAS / Incapacidad", min_value=0, help="CSJ: Mantiene el dominical, pero descuenta el Auxilio de Transporte al no haber desplazamiento.")
-
-with st.expander("➖ Otras Deducciones"):
-    prestamos = st.number_input("Préstamos/Embargos (COP)", value=0, step=10000, help="Debe existir autorización escrita.")
-
-# 6. Lógica Matemática Blindada
-valor_dia = salario_base / 30
-
-# Días a pagar (Descuentos inteligentes)
-dias_salario = max(0, dias_periodo - (faltas_injustificadas * 2)) # Falta + Dominical
-dias_auxilio = max(0, dias_periodo - faltas_injustificadas - inasistencias_justificadas) # Ambas quitan transporte
-
-salario_final = (valor_dia * dias_salario)
-auxilio_final = (AUXILIO_2026 / 30 * dias_auxilio) if tiene_auxilio else 0
-
-total_extras = (he_d * VALOR_HORA_ORDINARIA * 1.25) + (he_n * VALOR_HORA_ORDINARIA * 1.75) + (rec_n * VALOR_HORA_ORDINARIA * 0.35) + (dom * VALOR_HORA_ORDINARIA * 1.80) + (he_dom_d * VALOR_HORA_ORDINARIA * 2.05) + (he_dom_n * VALOR_HORA_ORDINARIA * 2.55)
-
-devengado = salario_final + total_extras + auxilio_final
-base_ss = salario_final + total_extras
-
-salud = base_ss * 0.04
-pension = base_ss * 0.04
-neto = devengado - salud - pension - prestamos
-
-# 7. Visualización y Comprobante
-st.markdown("---")
-st.markdown(f"### 💰 TOTAL NETO A PAGAR: **${neto:,.0f}**")
-
-resumen = pd.DataFrame({
-    "Concepto": ["Salario Proporcional", "Total Horas Extras", "Auxilio de Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "NETO FINAL"],
-    "Valor": [f"+ $ {salario_final:,.0f}", f"+ $ {total_extras:,.0f}", f"+ $ {auxilio_final:,.0f}", f"- $ {salud:,.0f}", f"- $ {pension:,.0f}", f"- $ {prestamos:,.0f}", f"$ {neto:,.0f}"]
-})
-st.table(resumen)
-
-if st.button("📄 Generar Comprobante para Firma", type="primary"):
-    st.markdown(f"""
-    <div class="recibo-box">
-        <h3 style="text-align: center;">RECIBO DE PAGO Y PAZ Y SALVO</h3>
-        <p><strong>Empresa:</strong> {empresa} | <strong>Trabajador:</strong> {empleado} ({cedula})</p>
-        <p><strong>Neto Pagado:</strong> ${neto:,.0f}</p>
-        <p style="font-size: 0.8rem;">El trabajador declara haber recibido a conformidad el pago exacto de su salario, auxilio de transporte, recargos y descuentos de ley, encontrándose a paz y salvo por este periodo.</p>
-        <div style="display: flex; justify-content: space-around; margin-top: 40px;">
-            <div style="border-top: 1px solid black; width: 40%; text-align: center;">Empleador</div>
-            <div style="border-top: 1px solid black; width: 40%; text-align: center;">Trabajador</div>
-        </div>
-    </div>
+    <style>
+    .receipt-container {
+        border: 1px solid #d1d1d1;
+        padding: 30px;
+        border-radius: 10px;
+        background-color: #ffffff;
+        color: #333333;
+        font-family: Arial, sans-serif;
+    }
+    .header { border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-bottom: 20px; }
+    .badge { background-color: #4CAF50; color: white; padding: 5px 10px; border-radius: 5px; float: right; }
+    .footer { margin-top: 30px; font-size: 0.8em; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+    .total-box { background-color: #f8f9fa; padding: 15px; border-top: 2px solid #333; font-weight: bold; font-size: 1.2em; }
+    </style>
     """, unsafe_allow_html=True)
+
+# --- CONSTANTES 2026 ---
+SALARIO_MINIMO_2026 = Decimal('1750905')
+AUX_TRANSPORTE_2026 = Decimal('249095')
+
+# --- LÓGICA DE NEGOCIO ---
+def calcular_nomina(tipo_empleado, base, dias, extras, deducciones_otras):
+    # Cálculos base
+    salario_diario = (SALARIO_MINIMO_2026 / 30)
+    aux_transporte_diario = (AUX_TRANSPORTE_2026 / 30)
+    dominical_diario = (salario_diario / 6)
+    
+    if tipo_empleado == "Tiempo Completo":
+        # Base 30 días
+        devengado_base = Decimal(base)
+        aux_transporte = AUX_TRANSPORTE_2026
+    else:
+        # Por días: (valor_dia * dias) + proporcional dominical + aux transporte proporcional
+        valor_dia = Decimal(base)
+        devengado_base = valor_dia * Decimal(dias)
+        # Dominical proporcional (1 día por cada 6 trabajados)
+        dominical = (valor_dia / 6) * Decimal(dias)
+        aux_transporte = aux_transporte_diario * Decimal(dias)
+        devengado_base += dominical
+
+    total_devengado = devengado_base + aux_transporte + Decimal(extras)
+    
+    # Deducciones (4% salud + 4% pensión)
+    salud = (total_devengado * Decimal('0.04')).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    pension = (total_devengado * Decimal('0.04')).quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+    total_deducciones = salud + pension + Decimal(deducciones_otras)
+    
+    neto_pagar = total_devengado - total_deducciones
+    
+    return {
+        "devengado": total_devengado,
+        "aux_transporte": aux_transporte,
+        "salud": salud,
+        "pension": pension,
+        "otras": deducciones_otras,
+        "total_deducciones": total_deducciones,
+        "neto": neto_pagar
+    }
+
+# --- SIDEBAR: ENTRADA DE DATOS ---
+with st.sidebar:
+    st.header("Datos de Nómina")
+    nombre = st.text_input("Nombre Empleado", "Ej. Juan Pérez")
+    cedula = st.text_input("Cédula/ID", "123456789")
+    tipo_empleado = st.radio("Modalidad", ["Tiempo Completo", "Por Días / Doméstico"])
+    
+    if tipo_empleado == "Tiempo Completo":
+        base = st.number_input("Salario Base Mensual", min_value=1750905, value=1750905)
+        dias = 30
+    else:
+        base = st.number_input("Valor día pactado", min_value=0, value=76394)
+        dias = st.number_input("Días trabajados", min_value=1, max_value=30, value=8)
+    
+    extras = st.number_input("Horas Extras / Recargos", value=0)
+    deducciones_extra = st.number_input("Otras deducciones", value=0)
+    
+    procesar = st.button("Generar Comprobante")
+
+# --- RENDERIZADO DEL COMPROBANTE ---
+if procesar:
+    res = calcular_nomina(tipo_empleado, base, dias, extras, deducciones_extra)
+    
+    st.markdown('<div class="receipt-container">', unsafe_allow_html=True)
+    
+    # Header
+    st.markdown(f'''
+    <div class="header">
+        <span class="badge">Nómina Procesada</span>
+        <h2>Lidera Nómina Pro</h2>
+        <p>Fecha: {datetime.now().strftime("%d/%m/%Y")}</p>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Info Empleado
+    st.write(f"**Empleado:** {nombre} | **Cédula:** {cedula}")
+    
+    # Columnas Financieras
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("DEVENGOS")
+        st.write(f"Salario/Días: ${res['devengado'] - res['aux_transporte'] - Decimal(extras):,.0f}")
+        st.write(f"Aux. Transporte: ${res['aux_transporte']:,.0f}")
+        st.write(f"Extras/Recargos: ${extras:,.0f}")
+        st.write(f"**Total Devengado:** ${res['devengado']:,.0f}")
+        
+    with col2:
+        st.subheader("DEDUCCIONES")
+        st.write(f"Salud (4%): ${res['salud']:,.0f}")
+        st.write(f"Pensión (4%): ${res['pension']:,.0f}")
+        st.write(f"Otras: ${res['otras']:,.0f}")
+        st.write(f"**Total Deducciones:** ${res['total_deducciones']:,.0f}")
+
+    # Total Final
+    st.markdown(f'''
+    <div class="total-box">
+        NETO A PAGAR: ${res['neto']:,.0f}
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown('<div class="footer">Este documento es un soporte de pago calculado conforme a la legislación laboral 2026.</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.success("¡Comprobante generado con éxito!")
+else:
+    st.info("Ingresa los datos en el menú lateral para generar el comprobante.")
