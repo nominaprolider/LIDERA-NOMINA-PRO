@@ -64,7 +64,7 @@ else:
     with col4:
         tiene_auxilio = st.checkbox("Incluir Auxilio Proporcional", value=True)
 
-# 5. Novedades, Horas Extras y Ausentismos (TODO INTEGRADO)
+# 5. Novedades, Horas Extras y Ausentismos
 st.markdown("### 📊 3. Novedades del Período")
 
 with st.expander("➕ Horas Extras y Recargos"):
@@ -91,17 +91,24 @@ with st.expander("➖ Otras Deducciones"):
 # 6. Lógica Matemática Blindada
 valor_dia = salario_base / 30
 
-# Días a pagar (Descuentos inteligentes)
-dias_salario = max(0, dias_periodo - (faltas_injustificadas * 2)) # Falta + Dominical
-dias_auxilio = max(0, dias_periodo - faltas_injustificadas - inasistencias_justificadas) # Ambas quitan transporte
+# Lógica condicional por modalidad
+if modalidad == "Ordinaria (Quincena/Mes)":
+    dias_salario = max(0, dias_periodo - (faltas_injustificadas * 2))
+    dominical_proporcional = 0 # Incluido en el sueldo ordinario
+else:
+    dias_salario = dias_periodo
+    # Dominical proporcional (1 día por cada 6 trabajados)
+    dominical_proporcional = (valor_dia * dias_salario) / 6
 
+# Cálculo general
+dias_auxilio = max(0, dias_periodo - faltas_injustificadas - inasistencias_justificadas)
 salario_final = (valor_dia * dias_salario)
 auxilio_final = (AUXILIO_2026 / 30 * dias_auxilio) if tiene_auxilio else 0
 
 total_extras = (he_d * VALOR_HORA_ORDINARIA * 1.25) + (he_n * VALOR_HORA_ORDINARIA * 1.75) + (rec_n * VALOR_HORA_ORDINARIA * 0.35) + (dom * VALOR_HORA_ORDINARIA * 1.80) + (he_dom_d * VALOR_HORA_ORDINARIA * 2.05) + (he_dom_n * VALOR_HORA_ORDINARIA * 2.55)
 
-devengado = salario_final + total_extras + auxilio_final
-base_ss = salario_final + total_extras
+devengado = salario_final + dominical_proporcional + total_extras + auxilio_final
+base_ss = salario_final + dominical_proporcional + total_extras
 
 salud = base_ss * 0.04
 pension = base_ss * 0.04
@@ -112,8 +119,8 @@ st.markdown("---")
 st.markdown(f"### 💰 TOTAL NETO A PAGAR: **${neto:,.0f}**")
 
 resumen = pd.DataFrame({
-    "Concepto": ["Salario Proporcional", "Total Horas Extras", "Auxilio de Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "NETO FINAL"],
-    "Valor": [f"+ $ {salario_final:,.0f}", f"+ $ {total_extras:,.0f}", f"+ $ {auxilio_final:,.0f}", f"- $ {salud:,.0f}", f"- $ {pension:,.0f}", f"- $ {prestamos:,.0f}", f"$ {neto:,.0f}"]
+    "Concepto": ["Salario Proporcional", "Dominical Prop.", "Total Horas Extras", "Auxilio de Transporte", "Salud (4%)", "Pensión (4%)", "Préstamos/Otros", "NETO FINAL"],
+    "Valor": [f"+ $ {salario_final:,.0f}", f"+ $ {dominical_proporcional:,.0f}", f"+ $ {total_extras:,.0f}", f"+ $ {auxilio_final:,.0f}", f"- $ {salud:,.0f}", f"- $ {pension:,.0f}", f"- $ {prestamos:,.0f}", f"$ {neto:,.0f}"]
 })
 st.table(resumen)
 
@@ -130,4 +137,3 @@ if st.button("📄 Generar Comprobante para Firma", type="primary"):
         </div>
     </div>
     """, unsafe_allow_html=True)
-
